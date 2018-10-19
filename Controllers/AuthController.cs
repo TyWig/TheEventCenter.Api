@@ -78,7 +78,7 @@ namespace TheEventCenter.Api.Controllers
 		}
 
 		[HttpPost]
-		[Route("[action]")]
+		[Route("register")]
 		public async Task<IActionResult> Post([FromBody] RegistrationViewModel model)
 		{
 			if (!ModelState.IsValid)
@@ -100,7 +100,7 @@ namespace TheEventCenter.Api.Controllers
 			return new OkObjectResult("Account created");
 		}
 
-		[HttpPost("[action]")]
+		[HttpPost("user-exists")]
 		public bool UserExists([FromBody]string email)
 		{
 			return true;
