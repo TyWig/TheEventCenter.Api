@@ -62,7 +62,7 @@ namespace TheEventCenter.Api.Controllers
 			//return new OkObjectResult(JsonConvert.SerializeObject(identity, _serializerSettings));
 			if (identity == null)
 			{
-				return BadRequest(Errors.AddErrorToModelState("login_failure", "Invalid username or password.", ModelState));
+				return BadRequest(Errors.AddErrorToModelState("response", "Invalid username or password.", ModelState));
 			}
 
 			// Serialize and return the response

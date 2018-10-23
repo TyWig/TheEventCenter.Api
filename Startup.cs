@@ -102,6 +102,7 @@ namespace TheEventCenter.Api
 			});
 
 			services.AddSingleton<IJwtFactory, JwtFactory>();
+			services.AddCors();
 		}
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -119,8 +120,14 @@ namespace TheEventCenter.Api
                 app.UseHsts();
             }
 
+
+			app.UseCors(options => options
+				.WithOrigins("http://localhost:4200")
+				.AllowAnyHeader()
+				.AllowAnyMethod()
+			);
 			app.UseAuthentication();
-			app.UseHttpsRedirection();
+			//app.UseHttpsRedirection();
             app.UseMvc();
         }
     }
