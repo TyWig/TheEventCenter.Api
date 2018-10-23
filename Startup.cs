@@ -46,7 +46,7 @@ namespace TheEventCenter.Api
         {
 			services.AddDbContext<ApplicationDbContext>(options =>
 			options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"),
-			b => b.MigrationsAssembly("TheClubHouse")));
+			b => b.MigrationsAssembly("TheEventCenter.Api")));
 
 			services.AddIdentity<AppUser, IdentityRole>(o =>
 			{
