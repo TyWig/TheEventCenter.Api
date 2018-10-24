@@ -100,12 +100,6 @@ namespace TheEventCenter.Api.Controllers
 			return new OkObjectResult("Account created");
 		}
 
-		[HttpPost("user-exists")]
-		public bool UserExists([FromBody]string email)
-		{
-			return true;
-		}
-
 		private async Task<ClaimsIdentity> GetClaimsIdentity(string userName, string password)
 		{
 			if (!string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(password))
