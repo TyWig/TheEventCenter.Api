@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using static Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions;
 using Newtonsoft.Json;
 using TheEventCenter.Api.Db;
 using TheEventCenter.Api.Db.Models;
@@ -15,16 +16,14 @@ using TheEventCenter.Api.Helpers;
 using TheEventCenter.Api.Models;
 using TheEventCenter.Api.ViewModels;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace TheEventCenter.Api.Controllers
 {
 	[Route("api/[controller]")]
-	[AllowAnonymous]
 	public class AuthController : Controller
 	{
 		private readonly IMapper _mapper;
 		private readonly UserManager<AppUser> _userManager;
+		private readonly SignInManager<AppUser> _signInManager;
 		private readonly ApplicationDbContext _dbContext;
 		private readonly IJwtFactory _jwtFactory;
 		private readonly JsonSerializerSettings _serializerSettings;
@@ -33,6 +32,7 @@ namespace TheEventCenter.Api.Controllers
 		public AuthController(
 			IMapper mapper,
 			UserManager<AppUser> userManager,
+			SignInManager<AppUser> signInManager,
 			ApplicationDbContext dbContext,
 			IJwtFactory jwtFactory,
 			IOptions<JwtIssuerOptions> jwtOptions
@@ -40,6 +40,7 @@ namespace TheEventCenter.Api.Controllers
 		{
 			_mapper = mapper;
 			_userManager = userManager;
+			_signInManager = signInManager;
 			_dbContext = dbContext;
 			_jwtFactory = jwtFactory;
 			_serializerSettings = new JsonSerializerSettings
@@ -51,35 +52,39 @@ namespace TheEventCenter.Api.Controllers
 		}
 
 		[HttpPost("[action]")]
+		[AllowAnonymous]
 		public async Task<IActionResult> Login([FromBody] LoginRequest request)
 		{
-			if (!ModelState.IsValid)
+			if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Password))
 			{
-				return BadRequest(ModelState);
+				return BadRequest(new AuthResponse() { Response = "Username and Password required." });
+			}
+			var result = await _signInManager.PasswordSignInAsync(request.UserName, request.Password, false, false);
+
+			if (!result.Succeeded)
+			{
+				return BadRequest(new AuthResponse() { Response = "Username or password invalid."});
 			}
 
-			var identity = await GetClaimsIdentity(request.UserName, request.Password);
-			//return new OkObjectResult(JsonConvert.SerializeObject(identity, _serializerSettings));
-			if (identity == null)
-			{
-				return BadRequest(Errors.AddErrorToModelState("response", "Invalid username or password.", ModelState));
-			}
+			var appUser = await _userManager.FindByEmailAsync(request.UserName);
+			var claimsIdentity = _jwtFactory.GenerateClaimsIdentity(request.UserName, appUser.Id);
 
-			// Serialize and return the response
 			var response = new
 			{
-				id = identity.Claims.Single(c => c.Type == "id").Value,
-				auth_token = await _jwtFactory.GenerateEncodedToken(request.UserName, identity),
+				id = appUser.Id,
+				auth_token = await _jwtFactory.GenerateEncodedToken(request.UserName, claimsIdentity),
 				expires_in = (int)_jwtOptions.ValidFor.TotalSeconds
 			};
 
+			await _userManager.SetAuthenticationTokenAsync(appUser, "TheEventCenter", "Auth_Token", response.auth_token);
 			var json = JsonConvert.SerializeObject(response, _serializerSettings);
 			return new OkObjectResult(json);
 		}
 
 		[HttpPost]
 		[Route("register")]
-		public async Task<IActionResult> Post([FromBody] RegistrationViewModel model)
+		[AllowAnonymous]
+		public async Task<IActionResult> Register([FromBody] RegistrationViewModel model)
 		{
 			if (!ModelState.IsValid)
 			{
@@ -100,26 +105,25 @@ namespace TheEventCenter.Api.Controllers
 			return new OkObjectResult("Account created");
 		}
 
-		private async Task<ClaimsIdentity> GetClaimsIdentity(string userName, string password)
+		[HttpGet]
+		[Route("logout")]
+		[Authorize]
+		public async Task<IActionResult> Logout()
 		{
-			if (!string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(password))
-			{
-				// get the user to verifty
-				var userToVerify = await _userManager.FindByEmailAsync(userName);
-
-				if (userToVerify != null)
-				{
-					// check the credentials  
-					if (await _userManager.CheckPasswordAsync(userToVerify, password))
-					{
-						return await Task.FromResult(_jwtFactory.GenerateClaimsIdentity(userName, userToVerify.Id));
-					}
-				}
-			}
-
-			// Credentials are invalid, or account doesn't exist
-			return await Task.FromResult<ClaimsIdentity>(null);
+			await HttpContext.SignOutAsync();
+			return new JsonResult(User.Identity.Name);
 		}
+	}
+
+	public class AuthResponse
+	{
+		public string Response { get; set; }
+	}
+
+	public class ErrorType
+	{
+		public string Type { get; set; }
+		public string Reason { get; set; }
 	}
 
 	public class LoginRequest

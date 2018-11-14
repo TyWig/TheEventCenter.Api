@@ -73,7 +73,6 @@ namespace TheEventCenter.Api
 				options.SigningCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256);
 			});
 
-			//var jwtAppSettingOptions = Configuration.GetSection(nameof(JwtIssuerOptions));
 			var tokenValidationParameters = new TokenValidationParameters
 			{
 				ValidateIssuer = true,
@@ -86,8 +85,8 @@ namespace TheEventCenter.Api
 				IssuerSigningKey = _signingKey,
 
 				RequireExpirationTime = false,
-				ValidateLifetime = false,
-				ClockSkew = TimeSpan.Zero
+				ValidateLifetime = true,
+				ClockSkew = TimeSpan.Zero,
 			};
 
 			services.AddAuthentication(options =>
@@ -99,6 +98,7 @@ namespace TheEventCenter.Api
 			{
 				options.TokenValidationParameters = tokenValidationParameters;
 				options.RequireHttpsMetadata = false;
+				options.SaveToken = true;
 			});
 
 			services.AddSingleton<IJwtFactory, JwtFactory>();
