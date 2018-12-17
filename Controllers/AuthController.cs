@@ -24,7 +24,7 @@ namespace TheEventCenter.Api.Controllers
 		private readonly IMapper _mapper;
 		private readonly UserManager<AppUser> _userManager;
 		private readonly SignInManager<AppUser> _signInManager;
-		private readonly ApplicationDbContext _dbContext;
+		private readonly ApplicationIdentityDbContext _dbContext;
 		private readonly IJwtFactory _jwtFactory;
 		private readonly JsonSerializerSettings _serializerSettings;
 		private readonly JwtIssuerOptions _jwtOptions;
@@ -33,7 +33,7 @@ namespace TheEventCenter.Api.Controllers
 			IMapper mapper,
 			UserManager<AppUser> userManager,
 			SignInManager<AppUser> signInManager,
-			ApplicationDbContext dbContext,
+			ApplicationIdentityDbContext dbContext,
 			IJwtFactory jwtFactory,
 			IOptions<JwtIssuerOptions> jwtOptions
 		)
@@ -57,7 +57,7 @@ namespace TheEventCenter.Api.Controllers
 		{
 			if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Password))
 			{
-				return BadRequest(new AuthResponse() { Response = "Username and Password required." });
+				return BadRequest(new AuthResponse() { Response = "Username and password required." });
 			}
 			var result = await _signInManager.PasswordSignInAsync(request.UserName, request.Password, false, false);
 
@@ -118,12 +118,6 @@ namespace TheEventCenter.Api.Controllers
 	public class AuthResponse
 	{
 		public string Response { get; set; }
-	}
-
-	public class ErrorType
-	{
-		public string Type { get; set; }
-		public string Reason { get; set; }
 	}
 
 	public class LoginRequest

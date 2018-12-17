@@ -5,12 +5,10 @@ using System.Threading.Tasks;
 
 namespace TheEventCenter.Api.Db.Models
 {
-	public class User
+	public class Role
 	{
 		public int Id { get; set; }
-		public string IdentityId { get; set; }
-		public AppUser Identity { get; set; }
-		public string Location { get; set; }
-		public virtual Role Role { get; set; }
+		public int UserId { get; set; }
+		public bool IsAdmin { get; set; }
 	}
 }

@@ -44,9 +44,14 @@ namespace TheEventCenter.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-			services.AddDbContext<ApplicationDbContext>(options =>
-			options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"),
-			b => b.MigrationsAssembly("TheEventCenter.Api")));
+			services.AddDbContext<ApplicationIdentityDbContext>(options =>
+				options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"),
+				b => b.MigrationsAssembly("TheEventCenter.Api"))
+			);
+			//services.AddDbContext<ApplicationDbContext>(options =>
+			//	options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"),
+			//	b => b.MigrationsAssembly("TheEventCenter.Api"))
+			//);
 
 			services.AddIdentity<AppUser, IdentityRole>(o =>
 			{
@@ -56,9 +61,15 @@ namespace TheEventCenter.Api
 				o.Password.RequireUppercase = false;
 				o.Password.RequireNonAlphanumeric = false;
 				o.Password.RequiredLength = 6;
-			}).AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
+			}).AddEntityFrameworkStores<ApplicationIdentityDbContext>().AddDefaultTokenProviders();
 
-			services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1).AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>());
+			services.AddMvc()
+				.SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+				.AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>())
+				.AddJsonOptions(options =>
+				{
+					options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+				});
 			services.AddAutoMapper();
 
 			// jwt wire up

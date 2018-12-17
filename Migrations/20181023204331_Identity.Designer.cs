@@ -9,7 +9,7 @@ using TheEventCenter.Api.Db;
 
 namespace TheEventCenter.Api.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
+    [DbContext(typeof(ApplicationIdentityDbContext))]
     [Migration("20181023204331_Identity")]
     partial class Identity
     {
