@@ -102,7 +102,20 @@ namespace TheEventCenter.Api.Controllers
 			await _dbContext.AppUsers.AddAsync(new User { IdentityId = userIdentity.Id, Location = model.PhoneNumber });
 			await _dbContext.SaveChangesAsync();
 
-			return new OkObjectResult("Account created");
+			var appUser = await _userManager.FindByEmailAsync(userIdentity.Email);
+			var claimsIdentity = _jwtFactory.GenerateClaimsIdentity(userIdentity.Email, appUser.Id);
+
+			var response = new
+			{
+				id = appUser.Id,
+				auth_token = await _jwtFactory.GenerateEncodedToken(userIdentity.Email, claimsIdentity),
+				expires_in = (int)_jwtOptions.ValidFor.TotalSeconds
+			};
+
+			await _userManager.SetAuthenticationTokenAsync(appUser, "TheEventCenter", "Auth_Token", response.auth_token);
+			var json = JsonConvert.SerializeObject(response, _serializerSettings);
+
+			return new OkObjectResult(json);
 		}
 
 		[HttpGet]
@@ -110,8 +123,11 @@ namespace TheEventCenter.Api.Controllers
 		[Authorize]
 		public async Task<IActionResult> Logout()
 		{
+			var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var user = await _userManager.FindByEmailAsync(username);
+			await _userManager.RemoveAuthenticationTokenAsync(user, "TheEventCenter", "Auth_Token");
 			await HttpContext.SignOutAsync();
-			return new JsonResult(User.Identity.Name);
+			return new JsonResult(true);
 		}
 	}
 
